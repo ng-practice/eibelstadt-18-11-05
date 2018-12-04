@@ -1,6 +1,6 @@
 <button
   pButton
-  [disabled]="isNothingToClear"
+  [disabled]="!hasMessages"
   icon="pi pi-trash"
   (click)="clear.emit()"
   class="ui-button-danger"></button>

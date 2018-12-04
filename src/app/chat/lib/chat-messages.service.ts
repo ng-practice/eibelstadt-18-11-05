@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Socket } from 'ngx-socket-io';
 import { BehaviorSubject, merge, Observable } from 'rxjs';
-import { map, mergeMapTo, tap } from 'rxjs/operators';
+import { map, mergeMap } from 'rxjs/operators';
 import { UserService } from 'src/app/authentication/lib';
 import { newGuid } from 'ts-guid';
 import { Message, MessageDraft } from '../models';
@@ -18,10 +18,12 @@ export enum ChatEvent {
   providedIn: 'root'
 })
 export class ChatMessagesService {
-  _incomingMessage$: Observable<Message>;
-  _history$: Observable<Message[]>;
+  private _incomingMessage$: Observable<Message>;
+  private _history$: Observable<Message[]>;
 
   private _messages$$ = new BehaviorSubject<Message[]>([]);
+
+  _hasMessages$ = this._messages$$.pipe(map(messages => messages.length > 0));
 
   constructor(private _socket: Socket, private _user: UserService) {
     this._history$ = this._socket.fromEvent(ChatEvent.HistoryLoaded);
@@ -32,15 +34,7 @@ export class ChatMessagesService {
     this._socket.emit(ChatEvent.RequestHistory);
 
     return merge(this._history$, this._incomingMessage$).pipe(
-      tap<Message | Message[]>(singleOrCollection => {
-        Array.isArray(singleOrCollection)
-          ? this._messages$$.next(singleOrCollection)
-          : this._messages$$.next([
-              ...this._messages$$.value,
-              singleOrCollection
-            ]);
-      }),
-      mergeMapTo(this._messages$$.asObservable())
+      mergeMap<Message | Message[], Message[]>(m => this._updateMessages(m))
     );
   }
 
@@ -73,5 +67,15 @@ export class ChatMessagesService {
   clear(): void {
     this._socket.emit(ChatEvent.ClearHistory);
     this._messages$$.next([]);
+  }
+
+  private _updateMessages(
+    singleOrCollection: Message | Message[]
+  ): Observable<Message[]> {
+    Array.isArray(singleOrCollection)
+      ? this._messages$$.next(singleOrCollection)
+      : this._messages$$.next([...this._messages$$.value, singleOrCollection]);
+
+    return this._messages$$.asObservable();
   }
 }

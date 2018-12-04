@@ -1,5 +1,5 @@
 <eb-clear-history
-    [isNothingToClear]="noMessagesInChatRoom"
+    [hasMessages]="hasMessages$ | async"
     (clear)="clearChatHistory()"
 ></eb-clear-history>
 <div

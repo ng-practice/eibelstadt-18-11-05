@@ -23,7 +23,7 @@ export class ChatRoomComponent
   implements AfterViewInit, AfterViewChecked, OnDestroy {
   private _destroy$$ = new Subject<void>();
 
-  noMessagesInChatRoom = true;
+  hasMessages$ = this._chatMessages._hasMessages$;
 
   @ViewChild('chatHistory')
   chatHistory: ElementRef<HTMLDivElement> | null = null;
@@ -34,11 +34,7 @@ export class ChatRoomComponent
   messages$: Observable<Message[]>;
 
   constructor(private _chatMessages: ChatMessagesService) {
-    this.messages$ = this._chatMessages
-      .connect()
-      .pipe(
-        tap(messages => (this.noMessagesInChatRoom = messages.length === 0))
-      );
+    this.messages$ = this._chatMessages.connect();
   }
 
   ngAfterViewInit(): void {
@@ -69,8 +65,9 @@ export class ChatRoomComponent
       .pipe(
         takeUntil(this._destroy$$),
         windowTime(5000),
-        switchMap(win => win.pipe(take(3)))
+        switchMap(win => win.pipe(take(3))),
+        switchMap(draft => this._chatMessages.publish(draft))
       )
-      .subscribe(draft => this._chatMessages.publish(draft));
+      .subscribe();
   }
 }

@@ -7,7 +7,7 @@ import { Component, OnInit, Output, EventEmitter, Input } from '@angular/core';
 })
 export class ClearHistoryComponent {
   @Input()
-  isNothingToClear = true;
+  hasMessages = false;
 
   @Output()
   clear = new EventEmitter<void>();
