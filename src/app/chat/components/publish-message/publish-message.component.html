@@ -1,8 +1,9 @@
 <textarea
   [formControl]="messageField"
+  (keydown.meta.enter)="emitMessage()"
   pInputTextarea
   autoResize="autoResize"></textarea>
 <button
   pButton
-  (click)="emitMessage(emitMessage)"
+  (click)="emitMessage()"
   icon="pi pi-envelope"></button>

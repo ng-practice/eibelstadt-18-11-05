@@ -1,13 +1,16 @@
 <eb-clear-history
-[isNothingToClear]="noMessagesInChatRoom"
-(clear)="clearChatHistory()"></eb-clear-history>
+    [isNothingToClear]="noMessagesInChatRoom"
+    (clear)="clearChatHistory()"
+></eb-clear-history>
 <div
-  #chatHistory
-  class="messages">
-  <eb-message-card
-    [message]="message"
-    *ngFor="let message of messages$ | async"></eb-message-card>
+    #chatHistory
+    class="messages"
+>
+    <eb-message-card
+        [message]="message"
+        *ngFor="let message of messages$ | async"
+    ></eb-message-card>
 </div>
 <div class="send-message">
-  <eb-publish-message (send)="publishMessage($event)"></eb-publish-message>
+    <eb-publish-message></eb-publish-message>
 </div>

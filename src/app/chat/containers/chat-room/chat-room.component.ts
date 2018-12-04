@@ -1,14 +1,17 @@
 import {
+  AfterViewChecked,
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  ViewChild,
   ElementRef,
-  AfterViewChecked
+  OnDestroy,
+  ViewChild
 } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
+import { switchMap, take, takeUntil, tap, windowTime } from 'rxjs/operators';
+import { PublishMessageComponent } from '../../components/publish-message/publish-message.component';
 import { ChatMessagesService } from '../../lib';
-import { Message, MessageDraft } from '../../models';
-import { tap } from 'rxjs/operators';
+import { Message } from '../../models';
 
 @Component({
   selector: 'eb-chat-room',
@@ -16,11 +19,17 @@ import { tap } from 'rxjs/operators';
   styleUrls: ['./chat-room.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ChatRoomComponent implements AfterViewChecked {
+export class ChatRoomComponent
+  implements AfterViewInit, AfterViewChecked, OnDestroy {
+  private _destroy$$ = new Subject<void>();
+
   noMessagesInChatRoom = true;
 
   @ViewChild('chatHistory')
   chatHistory: ElementRef<HTMLDivElement> | null = null;
+
+  @ViewChild(PublishMessageComponent)
+  messageBox: PublishMessageComponent | null = null;
 
   messages$: Observable<Message[]>;
 
@@ -32,19 +41,36 @@ export class ChatRoomComponent implements AfterViewChecked {
       );
   }
 
+  ngAfterViewInit(): void {
+    this._bindMessageBox();
+  }
+
   ngAfterViewChecked(): void {
     if (!this.chatHistory || !this.chatHistory.nativeElement) {
       return;
     }
-
     this.chatHistory.nativeElement.scrollTop = this.chatHistory.nativeElement.scrollHeight;
   }
 
-  publishMessage(draft: MessageDraft) {
-    this._chatMessages.publish(draft).subscribe();
+  ngOnDestroy(): void {
+    this._destroy$$.next();
   }
 
   clearChatHistory() {
     this._chatMessages.clear();
+  }
+
+  private _bindMessageBox(): void {
+    if (!this.messageBox) {
+      return;
+    }
+
+    this.messageBox.send
+      .pipe(
+        takeUntil(this._destroy$$),
+        windowTime(5000),
+        switchMap(win => win.pipe(take(3)))
+      )
+      .subscribe(draft => this._chatMessages.publish(draft));
   }
 }
